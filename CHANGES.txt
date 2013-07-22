@@ -1,1 +1,2 @@
 v0.1.0, 18 July 2013 -- Initial Release
+v0.1.1, 22 July 2013 -- Refactoring

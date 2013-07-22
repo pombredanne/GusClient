@@ -31,14 +31,10 @@ class BacklogClient(Client):
         for change in files_changed:
             changes = changes + change.path + "\n"
             
-        body = "COMMIT DETAILS\n--------------------------\nAuthor: %s\nLink: %s\n\n%s\n\n%s\n\nChanges:\n%s" % (author, changelist_url, title, commit_message, changes)
-        self.sf_session.ADM_Comment__c.create({
-            'Work__c': work_id,
-            'Body__c': body
-        })
+        self.add_changelist_comment(work_id, commit_message, files_changed)
         
     def add_changelist_comment(self, work_id, commit_message, changes):
-        body = "COMMIT DETAILS\n--------------------------\n\n%s\n\n%s" % commit_message, changes
+        body = "COMMIT DETAILS\n--------------------------\n\n%s\n\n%s" % (commit_message, changes)
         self.sf_session.ADM_Comment__c.create({
             'Work__c': work_id,
             'Body__c': body
