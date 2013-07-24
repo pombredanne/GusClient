@@ -18,10 +18,15 @@ class Client:
             try:
                 self.__create_session__(session.load_session_id())
             except Exception as e:
-                print e
-                user = self.__prompt__('GUS Username', session.load_user_name())
-                passwd = getpass.getpass('Please enter your GUS password: ')
-                token = self.__prompt__('Security Token', session.load_gus_token())
+                print "Seems we haven't logged you into GUS yet"
+                while True:
+                    try:
+                        user = self.__prompt__('GUS Username', session.load_user_name())
+                        passwd = getpass.getpass('Please enter your GUS password: ')
+                        token = self.__prompt__('Security Token', session.load_gus_token())
+                        break
+                    except EOFError:
+                        continue
                     
                 self.__create_session__(session.login(user, passwd, token))
             
