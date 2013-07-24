@@ -3,3 +3,4 @@ v0.1.1, 22 July 2013 -- Refactoring
 v0.1.2, 22 July 2013 -- fixed manifest error
 v0.1.3, 22 July 2013 -- Added session id method
 v0.1.4, 23 July 2013 -- Added parameters to Gus Login
+v0.1.5, 24 July 2013 -- Trap EOFError when logging in during hook execution
