@@ -59,13 +59,13 @@ class GusSession:
     
     def load_user_name(self):
         return self.__get_local__('user_name')
-        
+    
     def __store_data__(self, gus_data):
         with open(self.__local_file__, 'w') as f:
             pickle.dump(gus_data, f)
             f.close()
 
-    def store(self, sessionid='', token='', username=''):
+    def store(self, sessionid='', token='', username='', jenkinstoken='', jenkinsuser=''):
         gus_data = self.__load_data__()
         
         if sessionid != '':
@@ -76,6 +76,12 @@ class GusSession:
             
         if username != '':
             gus_data['user_name'] = username
+            
+        if jenkinstoken != '':
+            gus_data['jenkins_token'] = jenkinstoken
+            
+        if jenkinsuser != '':
+            gus_data['jenkins_user'] = jenkinsuser
             
         self.__store_data__(gus_data)
         
