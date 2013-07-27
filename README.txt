@@ -1,3 +1,4 @@
+----
 Easy client for connecting to GUS our internal Bug Tracking System.  If you don't work for salesforce.com,
 this package won't be very useful to you.
 
