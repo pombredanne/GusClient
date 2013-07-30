@@ -35,8 +35,12 @@ class BacklogClient(Client):
         
     def add_changelist_comment(self, work_id, commit_message, changes):
         body = "COMMIT DETAILS\n--------------------------\n\n%s\n\n%s" % (commit_message, changes)
+        self.add_comment(work_id, body)
+        
+    def add_comment(self, work_id, comment):
         self.sf_session.ADM_Comment__c.create({
             'Work__c': work_id,
-            'Body__c': body
+            'Body__c': comment,
         })
+        
     
