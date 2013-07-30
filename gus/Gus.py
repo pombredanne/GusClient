@@ -3,6 +3,11 @@ from GusSession import GusSession
 import getpass, sys
 
 class Client:
+    '''
+    Base class facilitates logging into GUS and setting up a session and
+    not much else.  Use BacklogClient to work with tickets or implement
+    your own based on simple_salesforce methods.
+    '''
     sf_session = None
     sf_session_id = None
     
@@ -43,8 +48,11 @@ class Client:
         self.sf_session_id = session_id
         
     def session_id(self):
+        '''
+        Returns the Gus Session ID
+        '''
         return self.sf_session_id
 
 class NoRecordException(Exception):
-    """nothing"""
+    """Thrown when record isn't found"""
     pass
