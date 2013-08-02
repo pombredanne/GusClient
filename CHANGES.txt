@@ -7,3 +7,4 @@ v0.1.5, 24 July 2013 -- Trap EOFError when logging in during hook execution
 v0.1.6, 25 July 2013 -- Fix gus prompts during commit
 v0.1.7, 27 July 2013 -- Fixed issue with inputs during commit. Refactored Session data persistence
 v0.1.8, 30 July 2013 -- Added documentation.
+v0.1.9,	 2 Aug	2013 -- Added comment method
