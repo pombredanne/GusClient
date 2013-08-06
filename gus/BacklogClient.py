@@ -1,4 +1,5 @@
 from .Gus import Client, NoRecordException
+from .GusSession import GusSession
 
 class BacklogClient(Client):
     def find_build_id(self, build_name):
@@ -48,5 +49,30 @@ class BacklogClient(Client):
             self.sf_session.ADM_Work__c.update(work['Id'], {'Related_Url__c': link})
             
         self.add_comment(work['Id'], 'Code Review Created: %s' % link)
+        
+    def get_user_id_for_email(self, email):
+        result = self.sf_session.query("select Id from User where Email = '%s'" % email)
+        return result['records'][0]['Id']
+    
+    def get_current_user_id(self):
+        session = GusSession()
+        username = session.load_user_name()
+        result = self.sf_session.query("select Id from User where Username='%s'" % username)
+        return result['records'][0]['Id']
+        
+    def get_open_work_for_user(self, email):
+        user_id = self.get_user_id_for_email(email)
+        return self.get_open_work_for_user_id(user_id)
+        
+    def get_open_work_for_user_id(self, user_id):
+        try:
+            result = self.sf_session.query("select Name, Status__c, Subject__c from ADM_Work__c where Assignee__c = '%s' and Resolved__c = 0" % user_id)
+            out = []
+            for record in result['records']:
+                out.append((record['Name'], record['Status__c'], record['Subject__c']))
+        except:
+            out = None
+            
+        return out
         
     
