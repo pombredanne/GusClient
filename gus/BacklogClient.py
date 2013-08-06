@@ -43,4 +43,10 @@ class BacklogClient(Client):
             'Body__c': comment,
         })
         
+    def add_collab_link(self, work, link):
+        if work['Related_Url__c'] == '':
+            self.sf_session.ADM_Work__c.update(work['Id'], {'Related_Url__c': link})
+            
+        self.add_comment(work['Id'], 'Code Review Created: %s' % link)
+        
     
