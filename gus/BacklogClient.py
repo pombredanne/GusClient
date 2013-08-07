@@ -50,16 +50,6 @@ class BacklogClient(Client):
             
         self.add_comment(work['Id'], 'Code Review Created: %s' % link)
         
-    def get_user_id_for_email(self, email):
-        result = self.sf_session.query("select Id from User where Email = '%s'" % email)
-        return result['records'][0]['Id']
-    
-    def get_current_user_id(self):
-        session = GusSession()
-        username = session.load_user_name()
-        result = self.sf_session.query("select Id from User where Username='%s'" % username)
-        return result['records'][0]['Id']
-        
     def get_open_work_for_user(self, email):
         user_id = self.get_user_id_for_email(email)
         return self.get_open_work_for_user_id(user_id)
@@ -74,5 +64,15 @@ class BacklogClient(Client):
             out = None
             
         return out
-        
+    
+    def get_work_with_active_tasks_for_user(self, user_id):
+        result = self.sf_session.query("select Work__c from ADM_Task__c where Assigned_To__c='%s' and Status__c!='Completed'"  % user_id)
+        out = []
+        for record in result['records']:
+            if record['Work__c'] not in [x[0] for x in out]:
+                data = self.sf_session.ADM_Work__c.get(record['Work__c'])
+                if data['Resolved__c'] == 0:
+                    out.append((data['Name'], data['Status__c'], data['Subject__c']))
+            
+        return out
     
