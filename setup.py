@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='gus_client',
-    version='0.1.10',
+    version='0.1.12',
     author='Shawn Crosby',
     author_email='scrosby@salesforce.com',
     packages=find_packages(),
@@ -11,6 +11,6 @@ setup(
     long_description=open('README.txt').read(),
     install_requires=[
         "simple_salesforce >= 0.51",
-        "sc_pylibs",
+        "sc_pylibs>=0.1.1",
     ],
 )

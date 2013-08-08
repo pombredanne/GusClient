@@ -32,7 +32,7 @@ class GusSession(Store):
         match = regex.search(data)
         sessionId = match.group(1)
         
-        self.store(sessionid=sessionId, token=security_token, username=user)
+        self.store(session_id=sessionId, token=security_token, user_name=user)
 
         return sessionId
     
