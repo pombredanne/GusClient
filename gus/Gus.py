@@ -1,6 +1,7 @@
 from simple_salesforce import Salesforce
 from GusSession import GusSession
-import getpass, sys
+from .ui.Login import Factory
+import sys
 
 class Client:
     '''
@@ -8,10 +9,11 @@ class Client:
     not much else.  Use BacklogClient to work with tickets or implement
     your own based on simple_salesforce methods.
     '''
-    sf_session = None
-    sf_session_id = None
     
     def __init__(self, session_id=None):
+        self.sf_session = None
+        self.sf_session_id = None
+
         if session_id is not None: #remote initialization
             try:
                 self.__create_session__(session_id)
@@ -23,13 +25,21 @@ class Client:
             try:
                 self.__create_session__(session.load_session_id())
             except Exception as e:
-                print "Seems we haven't logged you into GUS yet"
-                sys.stdin = open('/dev/tty')
-                user = self.__prompt__('GUS Username', session.load_user_name())
-                passwd = getpass.getpass('Please enter your GUS password: ')
-                token = self.__prompt__('Security Token', session.load_gus_token())
+                if sys.stdin.isatty():
+                    login = Factory().get_login()
+                else:
+                    login = Factory().get_login('GUI')
+
+                counter = 0
+                while self.sf_session_id is None and counter < 3:
+                    user = login.get_username()
+                    passwd = login.get_password()
+                    token = login.get_token()
+                        
+                    self.__create_session__(session.login(user, passwd, token))
                     
-                self.__create_session__(session.login(user, passwd, token))
+                if self.sf_session_id is None:
+                    raise Exception('Not Logged into GUS')
                 
     def get_user_id_for_email(self, email):
         try:
