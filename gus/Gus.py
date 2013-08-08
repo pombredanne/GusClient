@@ -30,15 +30,16 @@ class Client:
                 else:
                     login = Factory().get_login('GUI', 'Looks like we need to login to Gus...')
                     
-                login.add_prompt('user', 'Enter your GUS UserName', 'TEXT', session.load_user_name())
-                login.add_prompt('password', 'Enter your GUS Password', 'PASSWORD')
-                login.add_prompt('token', 'Enter your GUS Security Token', 'TEXT', session.load_gus_token())
+                login.add_prompt('user', 'GUS UserName', 'TEXT', session.load_user_name())
+                login.add_prompt('password', 'GUS Password', 'PASSWORD')
+                login.add_prompt('token', 'GUS Security Token', 'TEXT', session.load_gus_token())
 
                 counter = 0
                 while self.sf_session_id is None and counter < 3:
-                    user = login.get_username()
-                    passwd = login.get_password()
-                    token = login.get_token()
+                    login.display()
+                    user = login.get_value('user')
+                    passwd = login.get_value('password')
+                    token = login.get_value('token')
                         
                     self.__create_session__(session.login(user, passwd, token))
                     

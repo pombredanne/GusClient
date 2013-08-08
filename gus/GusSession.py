@@ -1,15 +1,12 @@
-import httplib, pickle, re, os
-from os.path import expanduser
+import httplib, re
+from userdata.Store import Store
 
-class GusSession:
+class GusSession(Store):
     '''
     Persists and loads local session data to facilitate login to
     Gus specifically.
     '''
     
-    def __init__(self, filename='.gus_data'):
-        self.__local_file__ = expanduser("~") + '/' + filename
-
     def login(self, user, password, security_token):
         '''
         Authenticates to Gus using a Soap Login with a provided username, password and
@@ -39,25 +36,6 @@ class GusSession:
 
         return sessionId
     
-    def __load_data__(self):
-        try:
-            with open(self.__local_file__, 'r') as existing:
-                gus_data = pickle.load(existing)
-                existing.close()
-        except:
-            gus_data = {}
-        
-        return gus_data
-        
-    def __get_local__(self, attribute):
-        try:
-            gus_data = self.__load_data__()
-            out = gus_data[attribute]
-        except:
-            out = None
-            
-        return out
-        
     def load_gus_token(self):
         '''
         Retrieves the locally cached security token or None if not found
@@ -76,40 +54,3 @@ class GusSession:
         '''
         return self.__get_local__('user_name')
     
-    def __store_data__(self, gus_data):
-        with open(self.__local_file__, 'w') as f:
-            pickle.dump(gus_data, f)
-            f.close()
-
-    def store(self, sessionid='', token='', username='', jenkinstoken='', jenkinsuser=''):
-        '''
-        Locally caches values supplied
-        '''
-        gus_data = self.__load_data__()
-        
-        if sessionid != '':
-            gus_data['session_id'] = sessionid
-            
-        if token != '':
-            gus_data['token'] = token
-            
-        if username != '':
-            gus_data['user_name'] = username
-            
-        if jenkinstoken != '':
-            gus_data['jenkins_token'] = jenkinstoken
-            
-        if jenkinsuser != '':
-            gus_data['jenkins_user'] = jenkinsuser
-            
-        self.__store_data__(gus_data)
-        
-    def remove_local(self):
-        '''
-        Removes the local cache file.  Typically used for testing cleanup
-        '''
-        try:
-            os.unlink(self.__local_file__);
-        except:
-            pass
-        
