@@ -1,6 +1,6 @@
 from simple_salesforce import Salesforce
 from GusSession import GusSession
-from .ui.Login import Factory
+from ui.Login import Factory
 import sys
 
 class Client:
@@ -26,9 +26,13 @@ class Client:
                 self.__create_session__(session.load_session_id())
             except Exception as e:
                 if sys.stdin.isatty():
-                    login = Factory().get_login()
+                    login = Factory().get_login('CLI', 'Looks like we need to login to Gus...')
                 else:
-                    login = Factory().get_login('GUI')
+                    login = Factory().get_login('GUI', 'Looks like we need to login to Gus...')
+                    
+                login.add_prompt('user', 'Enter your GUS UserName', 'TEXT', session.load_user_name())
+                login.add_prompt('password', 'Enter your GUS Password', 'PASSWORD')
+                login.add_prompt('token', 'Enter your GUS Security Token', 'TEXT', session.load_gus_token())
 
                 counter = 0
                 while self.sf_session_id is None and counter < 3:

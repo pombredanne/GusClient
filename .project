@@ -3,6 +3,7 @@
 	<name>GusClient</name>
 	<comment></comment>
 	<projects>
+		<project>R6_Helpers</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
