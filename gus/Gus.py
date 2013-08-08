@@ -52,12 +52,21 @@ class Client:
         
     def get_scrum_teams_for_user(self, userid):
         email = self.get_user_email(userid)
-        result = self.sf_session.query("select Scrum_Team__c, Scrum_Team_Name__c from ADM_Scrum_Team_Member__c where Internal_Email__c = '%s'" % email)
+        result = self.sf_session.query("select Scrum_Team__c, Scrum_Team_Name__c from ADM_Scrum_Team_Member__c where Internal_Email__c = '%s' and Allocation__c > 0" % email)
         out = []
         for record in result['records']:
             out.append((record['Scrum_Team__c'], record['Scrum_Team_Name__c']))
             
         return out
+    
+    def get_current_sprint_for_team(self, teamid):
+        try:
+            sprints = self.sf_session.query("select Id from ADM_Sprint__c where Scrum_Team__c = '%s' and Days_Remaining__c!='CLOSED'" % teamid)
+            sprint_id = sprints['records'][0]['Id']
+        except:
+            sprint_id = None
+            
+        return sprint_id
             
     def __prompt__(self, prompt, default):
         if default is not None:

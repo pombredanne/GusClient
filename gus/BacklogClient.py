@@ -1,5 +1,4 @@
 from .Gus import Client, NoRecordException
-from .GusSession import GusSession
 
 class BacklogClient(Client):
     def find_build_id(self, build_name):
@@ -45,8 +44,8 @@ class BacklogClient(Client):
         })
         
     def add_collab_link(self, work, link):
-        if work['Related_Url__c'] == '':
-            self.sf_session.ADM_Work__c.update(work['Id'], {'Related_Url__c': link})
+        if work['Related_URL__c'] == '':
+            self.sf_session.ADM_Work__c.update(work['Id'], {'Related_URL__c': link})
             
         self.add_comment(work['Id'], 'Code Review Created: %s' % link)
         
@@ -65,6 +64,17 @@ class BacklogClient(Client):
             
         return out
     
+    def get_in_progress_work_for_user_id(self, user_id):
+        try:
+            result = self.sf_session.query("select Name, Status__c, Subject__c from ADM_Work__c where Assignee__c = '%s' and Status__c = 'In Progress'" % user_id)
+            out = []
+            for record in result['records']:
+                out.append((record['Name'], record['Status__c'], record['Subject__c']))
+        except:
+            out = None
+            
+        return out
+    
     def get_work_with_active_tasks_for_user(self, user_id):
         result = self.sf_session.query("select Work__c from ADM_Task__c where Assigned_To__c='%s' and Status__c!='Completed'"  % user_id)
         out = []
@@ -74,5 +84,42 @@ class BacklogClient(Client):
                 if data['Resolved__c'] == 0:
                     out.append((data['Name'], data['Status__c'], data['Subject__c']))
             
+        return out
+    
+    def get_work_for_sprint(self, sprintid):
+        result = self.sf_session.query("select Name, Status__c, Subject__c from ADM_Work__c where Sprint__c='%s' and Resolved__c = 0" % sprintid)
+        out = []
+        for record in result['records']:
+            out.append((record['Name'], record['Status__c'], record['Subject__c']))
+            
+        return out
+    
+    def get_potential_work_for_user(self, user_id):
+        out = []
+        # get in progress work
+        in_progress = self.get_in_progress_work_for_user_id(user_id)
+        # get work in sprint
+        sprint_work = []
+        teams = self.get_scrum_teams_for_user(user_id)
+        for team in teams:
+            current_sprint = self.get_current_sprint_for_team(team[0])
+            if current_sprint is not None:
+                team_sprint_work = self.get_work_for_sprint(current_sprint)
+                for w in team_sprint_work:
+                    sprint_work.append(w)
+        # get work with tasks assigned
+        task_work = self.get_work_with_active_tasks_for_user(user_id)
+        
+        for w in in_progress:
+            out.append(w)
+            
+        for w in sprint_work:
+            if w[0] not in [x[0] for x in out] and w[1] == 'In Progress':
+                out.append(w)
+        
+        for w in task_work:
+            if w[0] not in [x[0] for x in out]:
+                out.append(w)
+                
         return out
     
