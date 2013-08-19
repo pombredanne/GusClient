@@ -11,3 +11,4 @@ v0.1.9,	 2 Aug	2013 -- Added comment method
 v0.1.10, 7 Aug	2013 -- Added functionality to assigned and active work for users
 v0.1.11, 8 Aug	2013 -- Refactor to use common login dialog and common local storage
 v0.1.12, 8 Aug	2013 -- Fixed issue with session keys
+v0.1.13,19 Aug  2013 -- Added method to get work for current sprints based on teams

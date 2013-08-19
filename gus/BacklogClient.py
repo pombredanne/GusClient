@@ -86,6 +86,19 @@ class BacklogClient(Client):
             
         return out
     
+    def get_sprint_work_for_teams(self, user_id):
+        teams = self.get_scrum_teams_for_user(user_id)
+        sprint_work = []
+        for team in teams:
+            current_sprint = self.get_current_sprint_for_team(team[0])
+            if current_sprint is not None:
+                team_sprint_work = self.get_work_for_sprint(current_sprint)
+                for w in team_sprint_work:
+                    sprint_work.append(w)
+                    
+        return sprint_work
+
+    
     def get_work_for_sprint(self, sprintid):
         result = self.sf_session.query("select Name, Status__c, Subject__c from ADM_Work__c where Sprint__c='%s' and Resolved__c = 0" % sprintid)
         out = []
@@ -98,15 +111,10 @@ class BacklogClient(Client):
         out = []
         # get in progress work
         in_progress = self.get_in_progress_work_for_user_id(user_id)
+        
         # get work in sprint
-        sprint_work = []
-        teams = self.get_scrum_teams_for_user(user_id)
-        for team in teams:
-            current_sprint = self.get_current_sprint_for_team(team[0])
-            if current_sprint is not None:
-                team_sprint_work = self.get_work_for_sprint(current_sprint)
-                for w in team_sprint_work:
-                    sprint_work.append(w)
+        sprint_work = self.get_sprint_work_for_teams(user_id)
+
         # get work with tasks assigned
         task_work = self.get_work_with_active_tasks_for_user(user_id)
         
