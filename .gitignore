@@ -10,8 +10,8 @@ dist
 build
 eggs
 parts
-bin
 var
+bin/*.png
 sdist
 develop-eggs
 .installed.cfg
