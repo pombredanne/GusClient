@@ -2,11 +2,11 @@ from .Gus import Client
 
 class DependencyClient(Client):
     def find_active_dependencies_on_team(self, teamid):
-        result = self.sf_session.query("Select Id from ADM_Team_Dependency__c where Provider_Team__c='%s' and Dependency_Status__c!='Completed'" % teamid)
+        result = self.sf_session.query("Select Id from ADM_Team_Dependency__c where Provider_Team__c='%s' and Dependency_Status__c not in('Completed','Never')" % teamid)
         return result['records']
     
     def find_active_team_dependencies(self, teamid):
-        result = self.sf_session.query("Select Id from ADM_Team_Dependency__c where Dependent_Team__c='%s' and Dependency_Status__c!='Completed'" % teamid)
+        result = self.sf_session.query("Select Id from ADM_Team_Dependency__c where Dependent_Team__c='%s' and Dependency_Status__c not in('Completed','Never')" % teamid)
         return result['records']
 
     def find_work_dependencies(self, work_id):
@@ -36,10 +36,17 @@ class DependencyClient(Client):
         their_work = self.find_work_for_dependency(dependency_id)
         provider = self.get_team_record(my_dep['Provider_Team__c'])
         dependent = self.get_team_record(my_dep['Dependent_Team__c'])
+        try:
+            build = self.get_build_record(my_dep['Target_Build__c']);
+            build_name=build['Name']
+        except:
+            build_name=''
+            
         data = {
                 'dep_name':my_dep['Name'],
                 'dep_status':my_dep['Dependency_Status__c'],
                 'dep_deliverable':my_dep['Deliverable__c'],
+                'dep_targeted':build_name,
                 'dep_providing':provider['Name'],
                 'dep_depending':dependent['Name'],
                 }
@@ -59,15 +66,21 @@ class DependencyClient(Client):
                     nested_deps.append(self.get_dependency_data(d['Id'], loop_detector=ld))
                 data['nested_deps'] = nested_deps
         else:
+            print "Loop detected on dependency: %s" % data['dep_name']
             data['error'] = '**Looping Dependency**'
             
         return data
     
     def get_team_dependency_tree(self, teamid):
         deps = self.find_active_dependencies_on_team(teamid)
+        needs = self.find_active_team_dependencies(teamid)
         out = []
         ld = []
         for dep in deps:
             out.append(self.get_dependency_data(dep['Id'], loop_detector=ld))
+            
+        for dep in needs:
+            out.append(self.get_dependency_data(dep['Id'], loop_detector=ld))
+            
         return out
             

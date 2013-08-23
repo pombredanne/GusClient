@@ -14,3 +14,4 @@ v0.1.12, 8 Aug	2013 -- Fixed issue with session keys
 v0.1.13,19 Aug  2013 -- Added method to get work for current sprints based on teams
 v0.1.14,23 Aug	2013 -- Added dependency client and script
 v0.1.15,23 Aug	2013 -- Improved graph output on dependencies and refactored low level da methods
+v0.1.16,23 Aug  2013 -- Added script to to package

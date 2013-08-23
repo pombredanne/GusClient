@@ -12,7 +12,7 @@ def their_work_node(dep):
     return pydot.Node(label)
 
 def add_node(graph, dep):
-        dep_node = pydot.Node(dep['dep_deliverable'])
+        dep_node = pydot.Node('%s (%s)\n%s' % (dep['dep_deliverable'].replace(':','-'), dep['dep_status'], dep['dep_targeted']))
         dep_node.set_shape('rectangle')
         if 'my_work' in dep.keys() and 'their_work' in dep.keys():
             graph.add_edge(pydot.Edge(my_work_node(dep), dep_node))

@@ -94,6 +94,10 @@ class Client:
         result = self.sf_session.ADM_Sprint__c.get(sprint_id)
         return result
     
+    def get_build_record(self, build_id):
+        result = self.sf_session.ADM_Build__c.get(build_id)
+        return result
+    
     def get_current_sprint_for_team(self, teamid):
         try:
             sprints = self.sf_session.query("select Id from ADM_Sprint__c where Scrum_Team__c = '%s' and Days_Remaining__c!='CLOSED'" % teamid)
