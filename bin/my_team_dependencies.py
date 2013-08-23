@@ -4,20 +4,23 @@ from gus.DependencyClient import DependencyClient
 import pydot
 
 def my_work_node(dep):
-    label = "%s (%s)" % (dep['my_work'],dep['my_work_status'])
+    label = "%s (%s)\n%s" % (dep['my_work'],dep['my_work_status'],dep['dep_depending'])
     return pydot.Node(label)
 
 def their_work_node(dep):
-    label = "%s (%s)" % (dep['their_work'],dep['their_work_status'])
+    label = "%s (%s)\n%s" % (dep['their_work'],dep['their_work_status'],dep['dep_providing'])
     return pydot.Node(label)
 
 def add_node(graph, dep):
+        dep_node = pydot.Node(dep['dep_deliverable'])
+        dep_node.set_shape('rectangle')
         if 'my_work' in dep.keys() and 'their_work' in dep.keys():
-            graph.add_edge(pydot.Edge(my_work_node(dep), their_work_node(dep), label=dep['dep_deliverable']))
+            graph.add_edge(pydot.Edge(my_work_node(dep), dep_node))
+            graph.add_edge(pydot.Edge(dep_node, their_work_node(dep)))
         elif 'my_work' in dep.keys():
-            graph.add_node(my_work_node(dep))
+            graph.add_edge(pydot.Edge(my_work_node(dep), dep_node))
         elif 'their_work' in dep.keys():
-            graph.add_node(their_work_node(dep))
+            graph.add_edge(pydot.Edge(dep_node, their_work_node(dep)))
             
         if 'nested_deps' in dep.keys():
             for nest in dep['nested_deps']:

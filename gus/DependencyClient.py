@@ -26,18 +26,6 @@ class DependencyClient(Client):
         dep = self.get_dependency_record(dependency_id)
         return self.get_work_record(dep['Provider_User_Story__c'])
         
-    def get_dependency_record(self, dependency_id):
-        result = self.sf_session.ADM_Team_Dependency__c.get(dependency_id)
-        return result
-    
-    def get_work_record(self, work_id):
-        if work_id is not None:
-            result = self.sf_session.ADM_Work__c.get(work_id)
-        else:
-            result = None
-            
-        return result
-    
     def get_dependency_data(self, dependency_id, loop_detector=None):
         if loop_detector is None:
             ld = []
@@ -46,12 +34,14 @@ class DependencyClient(Client):
         my_work = self.find_work_requiring_dependency(dependency_id)
         my_dep = self.get_dependency_record(dependency_id)
         their_work = self.find_work_for_dependency(dependency_id)
+        provider = self.get_team_record(my_dep['Provider_Team__c'])
+        dependent = self.get_team_record(my_dep['Dependent_Team__c'])
         data = {
                 'dep_name':my_dep['Name'],
                 'dep_status':my_dep['Dependency_Status__c'],
                 'dep_deliverable':my_dep['Deliverable__c'],
-                'dep_providing':my_dep['Provider_Team__c'],
-                'dep_depending':my_dep['Dependent_Team__c'],
+                'dep_providing':provider['Name'],
+                'dep_depending':dependent['Name'],
                 }
         if my_dep['Name'] not in ld:
             ld.append(my_dep['Name'])

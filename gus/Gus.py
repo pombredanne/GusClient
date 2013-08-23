@@ -74,6 +74,26 @@ class Client:
             
         return out
     
+    def get_team_record(self, teamid):
+        team = self.sf_session.ADM_Scrum_Team__c.get(teamid)
+        return team
+    
+    def get_dependency_record(self, dependency_id):
+        result = self.sf_session.ADM_Team_Dependency__c.get(dependency_id)
+        return result
+    
+    def get_work_record(self, work_id):
+        if work_id is not None:
+            result = self.sf_session.ADM_Work__c.get(work_id)
+        else:
+            result = None
+            
+        return result
+    
+    def get_sprint_record(self, sprint_id):
+        result = self.sf_session.ADM_Sprint__c.get(sprint_id)
+        return result
+    
     def get_current_sprint_for_team(self, teamid):
         try:
             sprints = self.sf_session.query("select Id from ADM_Sprint__c where Scrum_Team__c = '%s' and Days_Remaining__c!='CLOSED'" % teamid)
