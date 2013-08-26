@@ -18,3 +18,4 @@ v0.1.16,23 Aug  2013 -- Added script to to package
 v0.1.17,23 Aug	2013 -- 
 v0.1.18,24 Aug  2013 -- Made script do specified team instead of just my teams
 v0.1.19,26 Aug  2013 -- Added Release dependency graph tool
+v0.1.20,26 Aug	2013 -- Added work subject to graph output
