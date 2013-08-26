@@ -124,16 +124,16 @@ class DependencyGrapher:
     '''
     Creates a visualization of the team dependency graph
     '''
-    def __work_node__(self, workid, status, team):
-        label = "%s (%s)\n%s" % (workid,status,team)
+    def __work_node__(self, workid, status, team, subject):
+        label = "%s (%s)\n%s\n%s" % (workid,status,team,subject)
         node = pydot.Node(label)
         return node
     
     def __my_work_node__(self, dep):
-        return self.__work_node__(dep.my_work().name(), dep.my_work().status(), dep.my_work().team())
+        return self.__work_node__(dep.my_work().name(), dep.my_work().status(), dep.my_work().team(), dep.my_work().label())
     
     def __their_work_node__(self, dep):
-        return self.__work_node__(dep.their_work().name(), dep.their_work().status(), dep.their_work().team())
+        return self.__work_node__(dep.their_work().name(), dep.their_work().status(), dep.their_work().team(), dep.their_work().label())
     
     def __add_node__(self, graph, dep):
             dep_node = pydot.Node('%s (%s)\n%s' % (dep.deliverable().replace(':','-'), dep.status(), dep.target()), shape='box')
