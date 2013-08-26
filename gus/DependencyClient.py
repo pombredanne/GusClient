@@ -17,6 +17,13 @@ class DependencyClient(Client):
         '''
         result = self.sf_session.query("Select Id from ADM_Team_Dependency__c where Dependent_Team__c='%s' and Dependency_Status__c not in('Completed','Never')" % teamid)
         return result['records']
+    
+    def find_release_dependencies(self, buildid):
+        '''
+        Returns a list of Ids of Dependencies that have been targeted to a specified release
+        '''
+        result = self.sf_session.query("Select Id from ADM_Team_Dependency__c where Target_Build__c='%s'" % buildid)
+        return result['records']
 
     def find_work_dependencies(self, work_id):
         '''
@@ -85,7 +92,7 @@ class DependencyClient(Client):
     
     def get_team_dependency_tree(self, teamid):
         '''
-        Creates a digraph of all dependencies related to a specified team
+        Creates an array of dependencies related to a specified team with related dependencies
         '''
         deps = self.find_active_dependencies_on_team(teamid)
         needs = self.find_active_team_dependencies(teamid)
@@ -95,6 +102,18 @@ class DependencyClient(Client):
             out.append(self.get_dependency_data(dep['Id'], loop_detector=ld))
             
         for dep in needs:
+            out.append(self.get_dependency_data(dep['Id'], loop_detector=ld))
+            
+        return out
+    
+    def get_release_dependency_tree(self, buildid):
+        '''
+        Creates an array of dependencies targeted to a specified build with related dependencies
+        '''
+        deps = self.find_release_dependencies(buildid)
+        out = []
+        ld = []
+        for dep in deps:
             out.append(self.get_dependency_data(dep['Id'], loop_detector=ld))
             
         return out
@@ -128,7 +147,7 @@ class DependencyGrapher:
             for child in dep.children():
                 self.__add_node__(graph, child)
 
-    def graph_team(self, data, label):
+    def graph_dependencies(self, data, label):
         '''
         Creates a graph visualization using the label as a filename and the graph data from the client
         '''
