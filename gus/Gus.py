@@ -47,6 +47,9 @@ class Client:
                     raise Exception('Not Logged into GUS')
                 
     def get_user_id_for_email(self, email):
+        '''
+        Determines the object id of a user by looking up the record with the user's email address
+        '''
         try:
             result = self.sf_session.query("select Id from User where Email = '%s'" % email)
             userid = result['records'][0]['Id']
@@ -56,16 +59,25 @@ class Client:
         return userid
     
     def get_current_user_id(self):
+        '''
+        Determines the ID of the currently logged in user
+        '''
         session = GusSession()
         username = session.load_user_name()
         result = self.sf_session.query("select Id from User where Username='%s'" % username)
         return result['records'][0]['Id']
     
     def get_user_email(self, userid):
+        '''
+        Determines the email address of the specified user id
+        '''
         result = self.sf_session.query("select Email from User where Id='%s'" % userid)
         return result['records'][0]['Email']
         
     def get_scrum_teams_for_user(self, userid):
+        '''
+        Returns a list of team id, team name tuples that the specified user is a member of with > 0% allocation
+        '''
         email = self.get_user_email(userid)
         result = self.sf_session.query("select Scrum_Team__c, Scrum_Team_Name__c from ADM_Scrum_Team_Member__c where Internal_Email__c = '%s' and Allocation__c > 0" % email)
         out = []
@@ -75,14 +87,23 @@ class Client:
         return out
     
     def get_team_record(self, teamid):
+        '''
+        Returns the record for a specified team id
+        '''
         team = self.sf_session.ADM_Scrum_Team__c.get(teamid)
         return team
     
     def get_dependency_record(self, dependency_id):
+        '''
+        Returns the record for the specified dependency record id
+        '''
         result = self.sf_session.ADM_Team_Dependency__c.get(dependency_id)
         return result
     
     def get_work_record(self, work_id):
+        '''
+        Returns the record for the specified work record id
+        '''
         if work_id is not None:
             result = self.sf_session.ADM_Work__c.get(work_id)
         else:
@@ -91,31 +112,60 @@ class Client:
         return result
     
     def get_sprint_record(self, sprint_id):
+        '''
+        Returns the record for the specified sprint record id
+        '''
         result = self.sf_session.ADM_Sprint__c.get(sprint_id)
         return result
     
     def get_build_record(self, build_id):
+        '''
+        Returns the build for the specified build record id
+        '''
         result = self.sf_session.ADM_Build__c.get(build_id)
         return result
     
-    def get_current_sprint_for_team(self, teamid):
+    def find_build_id(self, build_name):
+        '''
+        Returns the id for a build specified by name
+        '''
+        result = self.sf_session.query("select Id from ADM_Build__c where Name='%s'" % build_name)
         try:
-            sprints = self.sf_session.query("select Id from ADM_Sprint__c where Scrum_Team__c = '%s' and Days_Remaining__c!='CLOSED'" % teamid)
+            build_id = result["records"][0]["Id"]
+        except:
+            raise NoRecordException('Can\'t find build ' + build_name)
+
+        return build_id
+
+    def find_work(self, work_name):
+        '''
+        Returns the work record for the work specified by name
+        '''
+        result = self.sf_session.query("select Id from ADM_Work__c where Name='%s'" % work_name)
+        try:
+            work_id = result["records"][0]["Id"]
+            work = self.get_work_record(work_id)
+        except:
+            raise NoRecordException('Can\'t find work ' + work_name)
+
+        return work
+
+    def get_current_sprint_for_team(self, teamid):
+        '''
+        Returns the Id of the current sprint for the specified team
+        '''
+        try:
+            sprints = self.sf_session.query("select Id from ADM_Sprint__c where Scrum_Team__c = '%s' and Days_Remaining__c not in('CLOSED','NOT STARTED')" % teamid)
             sprint_id = sprints['records'][0]['Id']
         except:
             sprint_id = None
             
         return sprint_id
             
-    def __prompt__(self, prompt, default):
-        if default is not None:
-            default_prompt = ' [' + default + ']'
-        else:
-            default_prompt = ''
-            
-        return raw_input('Please Enter your %s%s: ' % (prompt, default_prompt)) or default
-            
     def __create_session__(self, session_id):
+        '''
+        Creates a simple_salesforce session and checks to see if it is valid
+        '''
         self.sf_session = Salesforce(instance_url='https://gus.salesforce.com', session_id=session_id)
         self.sf_session.query("select Id from ADM_Work__c where Name='NOTHING'") #See if the token is good
         self.sf_session_id = session_id

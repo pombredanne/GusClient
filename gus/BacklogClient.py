@@ -1,25 +1,6 @@
-from .Gus import Client, NoRecordException
+from .Gus import Client
 
 class BacklogClient(Client):
-    def find_build_id(self, build_name):
-        result = self.sf_session.query("select Id from ADM_Build__c where Name='%s'" % build_name)
-        try:
-            build_id = result["records"][0]["Id"]
-        except:
-            raise NoRecordException('Can\'t find build ' + build_name)
-
-        return build_id
-
-    def find_work(self, work_name):
-        result = self.sf_session.query("select Id from ADM_Work__c where Name='%s'" % work_name)
-        try:
-            work_id = result["records"][0]["Id"]
-            work = self.sf_session.ADM_Work__c.get(work_id)
-        except:
-            raise NoRecordException('Can\'t find work ' + work_name)
-
-        return work
-
     def mark_work_fixed(self, work_id, build_id):
         self.sf_session.ADM_Work__c.update(work_id, {'Status__c': 'Fixed', 'Scheduled_Build__c': build_id})
 
@@ -48,10 +29,6 @@ class BacklogClient(Client):
             self.sf_session.ADM_Work__c.update(work['Id'], {'Related_URL__c': link})
             
         self.add_comment(work['Id'], 'Code Review Created: %s' % link)
-        
-    def get_open_work_for_user(self, email):
-        user_id = self.get_user_id_for_email(email)
-        return self.get_open_work_for_user_id(user_id)
         
     def get_open_work_for_user_id(self, user_id):
         try:
@@ -86,6 +63,18 @@ class BacklogClient(Client):
             
         return out
     
+    def get_work_for_sprint(self, sprintid):
+        result = self.sf_session.query("select Name, Status__c, Subject__c from ADM_Work__c where Sprint__c='%s' and Resolved__c = 0" % sprintid)
+        out = []
+        for record in result['records']:
+            out.append((record['Name'], record['Status__c'], record['Subject__c']))
+            
+        return out
+    
+    def get_open_work_for_user(self, email):
+        user_id = self.get_user_id_for_email(email)
+        return self.get_open_work_for_user_id(user_id)
+        
     def get_sprint_work_for_teams(self, user_id):
         teams = self.get_scrum_teams_for_user(user_id)
         sprint_work = []
@@ -98,14 +87,6 @@ class BacklogClient(Client):
                     
         return sprint_work
 
-    
-    def get_work_for_sprint(self, sprintid):
-        result = self.sf_session.query("select Name, Status__c, Subject__c from ADM_Work__c where Sprint__c='%s' and Resolved__c = 0" % sprintid)
-        out = []
-        for record in result['records']:
-            out.append((record['Name'], record['Status__c'], record['Subject__c']))
-            
-        return out
     
     def get_potential_work_for_user(self, user_id):
         out = []
