@@ -10,7 +10,7 @@ setup(
     description='Connect to GUS',
     long_description=open('README.txt').read(),
     scripts=[
-             'bin/my_team_dependencies.py',
+             'bin/team_dependencies.py',
              'bin/release_dependencies.py'],
     install_requires=[
         "simple_salesforce >= 0.51",
