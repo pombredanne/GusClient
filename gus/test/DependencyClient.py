@@ -9,38 +9,44 @@ from ..DependencyClient import DependencyGrapher, Dependency, Work
 class Test(unittest.TestCase):
 
     def setUp(self):
+        self.deps = []
+        for i in range(1,10):
+            self.deps.append(self.create_dep(str(i)))
+        
+    def create_dep(self, label):
         dep = {
-               'Id': '1',
-               'Name': 'TD-test',
-               'Deliverable__c': 'test dependency',
+               'Id': label,
+               'Name': 'TD-test%s' % label,
+               'Deliverable__c': 'Deliverable %s' % label,
                'Dependency_Status__c': 'New',
-               'Providing_User_Story__c': '1',
-               'Depending_User_Story__c': '2',
-               'Provider_Team__c': 'a',
-               'Dependent_Team__c': 'b',
-               'Target_Build__c': 'x',
+               'Providing_User_Story__c': 'PROVIDE%s' % label,
+               'Depending_User_Story__c': 'DEPEND%s' % label,
+               'Provider_Team__c': 'Providing Team',
+               'Dependent_Team__c': 'Depending Team',
+               'Target_Build__c': 'Release x',
                }
         
         work1 = {
-                'Id':'1',
-                'Name':'W-Work1',
-                'Status__c':'Triaged',
-                'Subject__c':'Stuff to do',
+                'Id':'1%s' % label,
+                'Name':'W-Work1%s' % label,
+                'Status__c':'New',
+                'Subject__c':'Work for %s' % label,
                  }
         work2 = {
-                'Id':'2',
-                'Name':'W-Work2',
+                'Id':'2%s' % label,
+                'Name':'W-Work2%s' % label,
                 'Status__c':'QA In Progress',
-                'Subject__c':'Stuff to get done',
+                'Subject__c':'Stuff to get done for %s' % label,
                  }
+        out = Dependency(dep, target='Release x')
+        out.set_my_work(Work(work1, 'Team 1'))
+        out.set_their_work(Work(work2, 'Team 2'))
         
-        self.dep = Dependency(dep, 'release x')
-        self.dep.set_my_work(Work(work1, 'team a'))
-        self.dep.set_their_work(Work(work2, 'team b'))
+        return out
 
     def test_simple_graph(self):
         grapher = DependencyGrapher()
-        grapher.graph_dependencies([self.dep], 'test')
+        grapher.graph_dependencies(self.deps, 'test')
 
 
 if __name__ == "__main__":

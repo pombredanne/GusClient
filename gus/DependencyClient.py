@@ -24,6 +24,20 @@ class DependencyClient(Client):
         '''
         result = self.sf_session.query("Select Id from ADM_Team_Dependency__c where Target_Build__c='%s'" % buildid)
         return result['records']
+    
+    def find_team_release_dependencies(self, buildid, teamid):
+        '''
+        Returns a list of dependencies in a specific release that a team has on other teams
+        '''
+        result = self.sf_session.query("Select Id from ADM_Team_Dependency__c where Target_Build__c='%s' and Dependent_Team__c='%s'" % (buildid, teamid))
+        return result['records']
+    
+    def find_release_dependencies_on_team(self, buildid, teamid):
+        '''
+        Returns a list of dependencies in a specific release that are on a specified team
+        '''
+        result = self.sf_session.query("Select Id from ADM_Team_Dependency__c where Target_Build__c='%s' and Provider_Team__c='%s'" % (buildid, teamid))
+        return result['records']
 
     def find_work_dependencies(self, work_id):
         '''
@@ -117,6 +131,19 @@ class DependencyClient(Client):
             out.append(self.get_dependency_data(dep['Id'], loop_detector=ld))
             
         return out
+    
+    def get_team_release_dependency_tree(self, buildid, teamid):
+        deps = self.find_team_release_dependencies(buildid, teamid)
+        needs = self.find_release_dependencies_on_team(buildid, teamid)
+        out = []
+        ld = []
+        for dep in deps:
+            out.append(self.get_dependency_data(dep['Id'], loop_detector=ld))
+            
+        for dep in needs:
+            out.append(self.get_dependency_data(dep['Id'], loop_detector=ld))
+            
+        return out
 
 import pydot
             
@@ -124,37 +151,87 @@ class DependencyGrapher:
     '''
     Creates a visualization of the team dependency graph
     '''
-    def __work_node__(self, workid, status, team, subject):
-        label = "%s (%s)\n%s\n%s" % (workid,status,team,subject)
+    def __get_status_color__(self, status):
+        status_color = {
+                        'New':'red',
+                        'Never':'red',
+                        'Deferred':'red',
+                        'Fixed':'yellow',
+                        'Committed':'yellow',
+                        'QA In Progress':'yellow',
+                        'Completed':'green',
+                        'Closed':'green',
+                        }
+        if status in status_color.keys():
+            color = status_color[status]
+        else:
+            color = 'orange'
+            
+        return color
+        
+    
+    def __work_node__(self, workid, status, subject):
+        label = "%s (%s)\n%s" % (workid,status,subject)
+            
         node = pydot.Node(label)
+        node.set_style('filled')
+        node.set_fillcolor(self.__get_status_color__(status))
         return node
     
     def __my_work_node__(self, dep):
-        return self.__work_node__(dep.my_work().name(), dep.my_work().status(), dep.my_work().team(), dep.my_work().label())
+        return self.__work_node__(dep.my_work().name(), dep.my_work().status(), dep.my_work().label())
     
     def __their_work_node__(self, dep):
-        return self.__work_node__(dep.their_work().name(), dep.their_work().status(), dep.their_work().team(), dep.their_work().label())
+        return self.__work_node__(dep.their_work().name(), dep.their_work().status(), dep.their_work().label())
+    
+    def __team_subgraph__(self, graph, team):
+        name = 'cluster_%s' % team.replace(' ', '_')
+        subgraph = pydot.Subgraph(name)
+        subgraph.set_label(team)
+        graph.add_subgraph(subgraph)
+            
+        return subgraph
     
     def __add_node__(self, graph, dep):
-            dep_node = pydot.Node('%s (%s)\n%s' % (dep.deliverable().replace(':','-'), dep.status(), dep.target()), shape='box')
+            dep_node = pydot.Node('%s (%s)\n%s' % (dep.deliverable().replace(':','-'), dep.status(), dep.target()))
+            dep_node.set_shape('rectangle')
+            dep_node.set_style('filled')
+            dep_node.set_fillcolor(self.__get_status_color__(dep.status()))
+            graph.add_node(dep_node)
             
             if dep.my_work() is not None:
-                graph.add_edge(pydot.Edge(self.__my_work_node__(dep), dep_node))
+                work = self.__my_work_node__(dep)
+                subgraph = self.__team_subgraph__(graph, dep.my_work().team())
+                subgraph.add_node(work)
+                graph.add_edge(pydot.Edge(work, dep_node))
             
             if dep.their_work() is not None:
-                graph.add_edge(pydot.Edge(dep_node, self.__their_work_node__(dep)))
+                work = self.__their_work_node__(dep)
+                subgraph = self.__team_subgraph__(graph, dep.their_work().team())
+                subgraph.add_node(work)
+                graph.add_edge(pydot.Edge(dep_node, work))
                 
             for child in dep.children():
                 self.__add_node__(graph, child)
 
-    def graph_dependencies(self, data, label):
+    def __plot_graph__(self, data, label):
         '''
         Creates a graph visualization using the label as a filename and the graph data from the client
         '''
-        graph = pydot.Dot(graph_type='digraph', label=label, width=8, height=10)
+        graph = pydot.Dot(graph_type='digraph', label=label, rankdir='LR')
         for dep in data:
             self.__add_node__(graph, dep)
         
+        return graph
+        
+    def graph_dependencies(self, data, label):
+        graph = self.__plot_graph__(data, label)
+
+        with open('%s.dot' % label, 'w') as f:
+            f.write(graph.to_string())    
+            f.close()
+        
+        graph.write('%s.pdf' % label, format='pdf')
         graph.write('%s.png' % label, format='png')
         
 class Dependency:
