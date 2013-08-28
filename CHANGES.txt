@@ -21,3 +21,4 @@ v0.1.19,26 Aug  2013 -- Added Release dependency graph tool
 v0.1.20,26 Aug	2013 -- Added work subject to graph output
 v0.1.21,27 Aug	2013 -- Added colors to the graph
 v0.1.22,28 Aug	2013 -- Fixed layout on graph and group by team.  Command line release_dependencies.py will graph all connected teams
+v0.2.0,	   Aug	2013 -- Fixed bugs

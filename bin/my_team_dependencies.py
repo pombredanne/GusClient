@@ -11,7 +11,7 @@ def graph_all_my_teams():
     teams = gus.get_scrum_teams_for_user(userid)
     for team in teams:
         data = gus.get_team_dependency_tree(team[0])
-        grapher.graph_dependencies(gus, data, team[1])
+        grapher.graph_dependencies(data, team[1])
             
 def main():
     if len(sys.argv) > 1:
