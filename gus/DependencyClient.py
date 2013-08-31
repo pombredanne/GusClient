@@ -51,6 +51,15 @@ class DependencyClient(Client):
             
         return out
     
+    def find_dependencies_on_work(self, work_id):
+        try:
+            result = self.sf_session.query("Select Id from ADM_Team_Dependency__c where Providing_User_Story__c='%s'" % work_id)
+            out = result['records']
+        except:
+            out = []
+            
+        return out
+    
     def find_work_requiring_dependency(self, dependency_id):
         '''
         Retrieves the work record for the dependent work for a specified dependency
@@ -64,7 +73,7 @@ class DependencyClient(Client):
         '''
         dep = self.get_dependency_record(dependency_id)
         return self.get_work_record(dep['Provider_User_Story__c'])
-        
+    
     def get_dependency_data(self, dependency_id, loop_detector=None):
         '''
         Creates a graph of all the work and related work of a specified dependency
@@ -78,6 +87,12 @@ class DependencyClient(Client):
         my_work = self.find_work_requiring_dependency(dependency_id)
         their_work = self.find_work_for_dependency(dependency_id)
         
+        if my_work is not None:
+            my_sprint = self.get_sprint_for_work(my_work['Id'])
+        
+        if their_work is not None:
+            their_sprint = self.get_sprint_for_work(their_work['Id'])
+        
         provider = self.get_team_record(my_dep['Provider_Team__c'])
         dependent = self.get_team_record(my_dep['Dependent_Team__c'])
         
@@ -89,12 +104,25 @@ class DependencyClient(Client):
             
         dep = Dependency(my_dep, target=build_name)
             
+        if my_work is not None:
+            if my_sprint is not None:
+                sprint = my_sprint['Name']
+            else:
+                sprint = None
+            dep.set_my_work(Work(my_work, dependent['Name'], sprint))
+            
+            work_for_deps = self.find_dependencies_on_work(my_work['Id'])
+            for d in work_for_deps:
+                dep.add_parent(self.get_dependency_data(d['Id'], ld))
+                
         if dep.name() not in ld:
             ld.append(dep.name())
-            if my_work is not None:
-                dep.set_my_work(Work(my_work, dependent['Name']))
             if their_work is not None:
-                dep.set_their_work(Work(their_work, provider['Name']))
+                if their_sprint is not None:
+                    sprint = their_sprint['Name']
+                else:
+                    sprint = None
+                dep.set_their_work(Work(their_work, provider['Name'], sprint))
                 
                 deps_on_their_work = self.find_work_dependencies(their_work['Id'])
                 for d in deps_on_their_work:
@@ -170,77 +198,128 @@ class DependencyGrapher:
         return color
         
     
-    def __work_node__(self, workid, status, subject):
-        label = "%s (%s)\n%s" % (workid,status,subject)
+    def __work_node__(self, workid, worklabel, status, subject):
+        label = "%s (%s)\n%s" % (worklabel,status,subject)
             
-        node = pydot.Node(label)
+        node = pydot.Node(self.__slice_label__(label))
+        node.set_URL(self.__gus_url__(workid))
         node.set_style('filled')
         node.set_fillcolor(self.__get_status_color__(status))
         return node
     
     def __my_work_node__(self, dep):
-        return self.__work_node__(dep.my_work().name(), dep.my_work().status(), dep.my_work().label())
+        return self.__work_node__(dep.my_work().id, dep.my_work().name(), dep.my_work().status(), dep.my_work().label())
     
     def __their_work_node__(self, dep):
-        return self.__work_node__(dep.their_work().name(), dep.their_work().status(), dep.their_work().label())
+        return self.__work_node__(dep.their_work().id, dep.their_work().name(), dep.their_work().status(), dep.their_work().label())
     
-    def __team_subgraph__(self, graph, team):
-        name = 'cluster_%s' % team.replace(' ', '_')
+    def __subgraph__(self, graph, label):
+        name = 'cluster_%s' % label.replace(' ', '_')
         subgraph = pydot.Subgraph(name)
-        subgraph.set_label(team)
+        subgraph.set_label(label)
         graph.add_subgraph(subgraph)
             
         return subgraph
     
+    def __slice_label__(self, label):
+        label = str(label).replace(":", " ")
+        words = label.split(' ')
+        out = []
+        max_length = 8
+        count = 0
+        for word in words:
+            out.append(word)
+            count = count + 1
+            if count >= max_length:
+                out.append("\n")
+                count = 0
+        return " ".join(out)
+    
+    def __gus_url__(self, ident):
+        return "https://gus.my.salesforce.com/%s" % ident
+    
     def __add_node__(self, graph, dep):
-            dep_node = pydot.Node('%s (%s)\n%s' % (dep.deliverable().replace(':','-'), dep.status(), dep.target()))
-            dep_node.set_shape('rectangle')
-            dep_node.set_style('filled')
-            dep_node.set_fillcolor(self.__get_status_color__(dep.status()))
-            graph.add_node(dep_node)
-            
-            if dep.my_work() is not None:
-                work = self.__my_work_node__(dep)
-                subgraph = self.__team_subgraph__(graph, dep.my_work().team())
-                subgraph.add_node(work)
-                graph.add_edge(pydot.Edge(work, dep_node))
-            
-            if dep.their_work() is not None:
-                work = self.__their_work_node__(dep)
-                subgraph = self.__team_subgraph__(graph, dep.their_work().team())
-                subgraph.add_node(work)
-                graph.add_edge(pydot.Edge(dep_node, work))
+        label = dep.deliverable()
+        dep_node = pydot.Node('%s (%s)\n%s' % (self.__slice_label__(label), dep.status(), dep.target()))
+        dep_node.set_URL(self.__gus_url__(dep.id))
+        dep_node.set_shape('rectangle')
+        dep_node.set_style('filled')
+        dep_node.set_fillcolor(self.__get_status_color__(dep.status()))
+        graph.add_node(dep_node)
+        
+        if dep.my_work() is not None:
+            work = self.__my_work_node__(dep)
+            team_subgraph = self.__subgraph__(graph, dep.my_work().team())
+            if dep.my_work().sprint() is not None:
+                subgraph = self.__subgraph__(team_subgraph, dep.my_work().sprint())
+                team_subgraph.add_subgraph(subgraph)
+            else:
+                subgraph = team_subgraph
                 
-            for child in dep.children():
-                self.__add_node__(graph, child)
+            subgraph.add_node(work)
+            graph.add_edge(pydot.Edge(work, dep_node))
+        
+        if dep.their_work() is not None:
+            work = self.__their_work_node__(dep)
+            team_subgraph = self.__subgraph__(graph, dep.their_work().team())
+            if dep.their_work().sprint() is not None:
+                subgraph = self.__subgraph__(team_subgraph, dep.their_work().sprint())
+                team_subgraph.add_subgraph(subgraph)
+            else:
+                subgraph = team_subgraph
+                
+            subgraph.add_node(work)
+            graph.add_edge(pydot.Edge(dep_node, work))
+            
+        for parent in dep.parents():
+            self.__add_node__(graph, parent)
+            
+        for child in dep.children():
+            self.__add_node__(graph, child)
 
     def __plot_graph__(self, data, label):
         '''
         Creates a graph visualization using the label as a filename and the graph data from the client
         '''
-        graph = pydot.Dot(graph_type='digraph', label=label, rankdir='LR')
+        graph = pydot.Dot(graph_type='digraph', graph_name='deps', label=label, rankdir='LR', strict='strict', splines='ortho')
         for dep in data:
             self.__add_node__(graph, dep)
         
         return graph
+    
+    def __make_web__(self, label):
+        with open("%s.map" % label, 'r') as m:
+            map_data = m.read()
+            m.close()
+            
+        with open("%s.html" % label, 'w') as html:
+            html.write("<html><head><title>%s</title></head>\n" % label)
+            html.write("<body><img src='%s.png' usemap='#deps' />" % label)
+            html.write(map_data)
+            html.write("</body></html>")
+            html.close()
         
     def graph_dependencies(self, data, label):
         graph = self.__plot_graph__(data, label)
-
+        label = label.replace('[&/\]','_')
         with open('%s.dot' % label, 'w') as f:
             f.write(graph.to_string())    
             f.close()
         
         graph.write('%s.pdf' % label, format='pdf')
         graph.write('%s.png' % label, format='png')
+        graph.write('%s.map' % label, format='cmapx')
+        self.__make_web__(label)
         
 class Dependency:
     def __init__(self, dep, target=None):
+        self.id = dep['Id']
         self.__name__ = dep['Name']
         self.__deliverable__ = dep['Deliverable__c']
         self.__status__ = dep['Dependency_Status__c']
         self.__target__ = target
         self.__children__ = []
+        self.__parents__ = []
         self.__my_work__ = None
         self.__their_work__ = None
         
@@ -274,12 +353,22 @@ class Dependency:
     def children(self):
         return self.__children__
     
+    def add_parent(self, dep):
+        self.__parents__.append(dep)
+        
+    def parents(self):
+        return self.__parents__
+    
 class Work:
-    def __init__(self, work, team):
+    def __init__(self, work, team, sprint=None):
+        self.id = work['Id']
         self.__name__ = work['Name']
         self.__label__ = work['Subject__c']
         self.__status__ = work['Status__c']
         self.__team__ = team
+        self.__sprint__ = sprint
+        self.parent_work = []
+        self.child_work = []
     
     def name(self):
         return self.__name__
@@ -292,4 +381,7 @@ class Work:
     
     def label(self):
         return self.__label__
+    
+    def sprint(self):
+        return self.__sprint__
     

@@ -46,6 +46,20 @@ class Client:
                 if self.sf_session_id is None:
                     raise Exception('Not Logged into GUS')
                 
+    def __create_session__(self, session_id):
+        '''
+        Creates a simple_salesforce session and checks to see if it is valid
+        '''
+        self.sf_session = Salesforce(instance_url='https://gus.salesforce.com', session_id=session_id)
+        self.sf_session.query("select Id from ADM_Work__c where Name='NOTHING'") #See if the token is good
+        self.sf_session_id = session_id
+        
+    def session_id(self):
+        '''
+        Returns the Gus Session ID
+        '''
+        return self.sf_session_id
+
     def get_user_id_for_email(self, email):
         '''
         Determines the object id of a user by looking up the record with the user's email address
@@ -100,6 +114,19 @@ class Client:
         result = self.sf_session.ADM_Team_Dependency__c.get(dependency_id)
         return result
     
+    def find_work(self, work_name):
+        '''
+        Returns the work record for the work specified by name
+        '''
+        result = self.sf_session.query("select Id from ADM_Work__c where Name='%s'" % work_name)
+        try:
+            work_id = result["records"][0]["Id"]
+            work = self.get_work_record(work_id)
+        except:
+            raise NoRecordException('Can\'t find work ' + work_name)
+
+        return work
+
     def get_work_record(self, work_id):
         '''
         Returns the record for the specified work record id
@@ -111,13 +138,43 @@ class Client:
             
         return result
     
-    def get_sprint_record(self, sprint_id):
+    def get_parent_work_for_work(self, workid):
         '''
-        Returns the record for the specified sprint record id
+        Returns a list of work record ids that are 'parents' to the specified work
         '''
-        result = self.sf_session.ADM_Sprint__c.get(sprint_id)
-        return result
+        result = self.sf_session.query("Select Parent_Work__c from ADM_Parent_Work__c where Child_Work__c='%s'" % workid)
+        return [x['Parent_Work__c'] for x in result['records']]
     
+    def get_child_work_for_work(self, workid):
+        '''
+        Returns a list of work record ids that are 'children' to the specified work
+        '''
+        result = self.sf_session.query("Select Child_Work_c from ADM_Parent_Work__c where Parent_Work__c='%s'" % workid)
+        return [x['Child_Work__c'] for x in result['records']]
+    
+    def get_sprint_for_work(self, workid):
+        work = self.get_work_record(workid)
+        if work['Sprint__c'] is not None:
+            sprint = self.get_sprint_record(work['Sprint__c'])
+        else:
+            sprint = None
+            
+        return sprint
+    
+    def get_work_tree(self, workid):
+        work = self.get_work_record(workid)
+        work.parents = []
+        parents = self.get_parent_work_for_work(workid)
+        for parent in parents:
+            work.parents.append(self.get_work_tree(parent))
+            
+        work.children = []
+        children = self.get_child_work_for_work(workid)
+        for child in children:
+            work.children.append(self.get_work_tree(child))
+            
+        return work
+
     def get_build_record(self, build_id):
         '''
         Returns the build for the specified build record id
@@ -137,19 +194,13 @@ class Client:
 
         return build_id
 
-    def find_work(self, work_name):
+    def get_sprint_record(self, sprint_id):
         '''
-        Returns the work record for the work specified by name
+        Returns the record for the specified sprint record id
         '''
-        result = self.sf_session.query("select Id from ADM_Work__c where Name='%s'" % work_name)
-        try:
-            work_id = result["records"][0]["Id"]
-            work = self.get_work_record(work_id)
-        except:
-            raise NoRecordException('Can\'t find work ' + work_name)
-
-        return work
-
+        result = self.sf_session.ADM_Sprint__c.get(sprint_id)
+        return result
+    
     def get_current_sprint_for_team(self, teamid):
         '''
         Returns the Id of the current sprint for the specified team
@@ -162,20 +213,6 @@ class Client:
             
         return sprint_id
             
-    def __create_session__(self, session_id):
-        '''
-        Creates a simple_salesforce session and checks to see if it is valid
-        '''
-        self.sf_session = Salesforce(instance_url='https://gus.salesforce.com', session_id=session_id)
-        self.sf_session.query("select Id from ADM_Work__c where Name='NOTHING'") #See if the token is good
-        self.sf_session_id = session_id
-        
-    def session_id(self):
-        '''
-        Returns the Gus Session ID
-        '''
-        return self.sf_session_id
-
 class NoRecordException(Exception):
     """Thrown when record isn't found"""
     pass

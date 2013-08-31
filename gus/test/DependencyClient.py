@@ -31,12 +31,14 @@ class Test(unittest.TestCase):
                 'Name':'W-Work1%s' % label,
                 'Status__c':'New',
                 'Subject__c':'Work for %s' % label,
+                'Sprint__c': 'Sprint 1',
                  }
         work2 = {
                 'Id':'2%s' % label,
                 'Name':'W-Work2%s' % label,
                 'Status__c':'QA In Progress',
                 'Subject__c':'Stuff to get done for %s' % label,
+                'Sprint__c': 'Sprint 2',
                  }
         out = Dependency(dep, target='Release x')
         out.set_my_work(Work(work1, 'Team 1'))
