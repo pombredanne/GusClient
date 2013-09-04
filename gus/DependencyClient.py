@@ -196,22 +196,34 @@ class DependencyGrapher:
             color = 'orange'
             
         return color
+    
+    def __get_line_style__(self, status):
+        line_style = {
+                      'Never':'dotted',
+                      }
+        
+        if status in line_style.keys():
+            style = line_style[status]
+        else:
+            style = 'filled'
+            
+        return style
         
     
-    def __work_node__(self, workid, worklabel, status, subject):
-        label = "%s (%s)\n%s" % (worklabel,status,subject)
+    def __work_node__(self, workid, worklabel, status, subject,rank):
+        label = "%s (%s)\nRank[%s]\n%s" % (worklabel,status,rank,subject)
             
         node = pydot.Node(self.__slice_label__(label))
         node.set_URL(self.__gus_url__(workid))
-        node.set_style('filled')
+        node.set_style(self.__get_line_style__(status))
         node.set_fillcolor(self.__get_status_color__(status))
         return node
     
     def __my_work_node__(self, dep):
-        return self.__work_node__(dep.my_work().id, dep.my_work().name(), dep.my_work().status(), dep.my_work().label())
+        return self.__work_node__(dep.my_work().id, dep.my_work().name(), dep.my_work().status(), dep.my_work().label(),dep.my_work().rank())
     
     def __their_work_node__(self, dep):
-        return self.__work_node__(dep.their_work().id, dep.their_work().name(), dep.their_work().status(), dep.their_work().label())
+        return self.__work_node__(dep.their_work().id, dep.their_work().name(), dep.their_work().status(), dep.their_work().label(), dep.their_work().rank())
     
     def __subgraph__(self, graph, label):
         name = 'cluster_%s' % label.replace(' ', '_')
@@ -240,10 +252,10 @@ class DependencyGrapher:
     
     def __add_node__(self, graph, dep):
         label = dep.deliverable()
-        dep_node = pydot.Node('%s (%s)\n%s' % (self.__slice_label__(label), dep.status(), dep.target()))
+        dep_node = pydot.Node('%s (%s)\n%s\n%s' % (dep.name(), dep.status(), self.__slice_label__(label), dep.target()))
         dep_node.set_URL(self.__gus_url__(dep.id))
         dep_node.set_shape('rectangle')
-        dep_node.set_style('filled')
+        dep_node.set_style(self.__get_line_style__(dep.status()))
         dep_node.set_fillcolor(self.__get_status_color__(dep.status()))
         graph.add_node(dep_node)
         
@@ -269,7 +281,9 @@ class DependencyGrapher:
                 subgraph = team_subgraph
                 
             subgraph.add_node(work)
-            graph.add_edge(pydot.Edge(dep_node, work))
+            edge = pydot.Edge(dep_node, work)
+            edge.set_style(self.__get_line_style__(dep.their_work().status()))
+            graph.add_edge(edge)
             
         for parent in dep.parents():
             self.__add_node__(graph, parent)
@@ -367,6 +381,7 @@ class Work:
         self.__status__ = work['Status__c']
         self.__team__ = team
         self.__sprint__ = sprint
+        self.__rank__ = work['Priority_Rank__c']
         self.parent_work = []
         self.child_work = []
     
@@ -384,4 +399,7 @@ class Work:
     
     def sprint(self):
         return self.__sprint__
+    
+    def rank(self):
+        return self.__rank__
     

@@ -24,3 +24,4 @@ v0.1.22,28 Aug	2013 -- Fixed layout on graph and group by team.  Command line re
 v0.2.0,	28 Aug	2013 -- Fixed bugs
 v0.2.1,	30 Aug  2013 -- Made dependency graphs for read-able and made PDF objects click-able
 v0.2.2, 31 Aug	2013 -- Added sprint grouping, strict and ortho splines to graph
+v0.2.3,  3 Sept 2013 -- Added backlog rank to work and changed status Never to dotted style

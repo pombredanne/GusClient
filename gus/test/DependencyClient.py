@@ -12,6 +12,8 @@ class Test(unittest.TestCase):
         self.deps = []
         for i in range(1,10):
             self.deps.append(self.create_dep(str(i)))
+            
+        self.deps[3].their_work().__status__ = 'Never'
         
     def create_dep(self, label):
         dep = {
@@ -32,6 +34,7 @@ class Test(unittest.TestCase):
                 'Status__c':'New',
                 'Subject__c':'Work for %s' % label,
                 'Sprint__c': 'Sprint 1',
+                'Priority_Rank__c': '1',
                  }
         work2 = {
                 'Id':'2%s' % label,
@@ -39,6 +42,7 @@ class Test(unittest.TestCase):
                 'Status__c':'QA In Progress',
                 'Subject__c':'Stuff to get done for %s' % label,
                 'Sprint__c': 'Sprint 2',
+                'Priority_Rank__c': '2',
                  }
         out = Dependency(dep, target='Release x')
         out.set_my_work(Work(work1, 'Team 1'))
