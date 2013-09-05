@@ -52,6 +52,9 @@ class DependencyClient(Client):
         return out
     
     def find_dependencies_on_work(self, work_id):
+        '''
+        Returns a list of ids of dependencies that need to be satisfied for a specified work item
+        '''
         try:
             result = self.sf_session.query("Select Id from ADM_Team_Dependency__c where Providing_User_Story__c='%s'" % work_id)
             out = result['records']
@@ -161,6 +164,9 @@ class DependencyClient(Client):
         return out
     
     def get_team_release_dependency_tree(self, buildid, teamid):
+        '''
+        Creates an array of dependencies targeted for a specified release for a specified team
+        '''
         deps = self.find_team_release_dependencies(buildid, teamid)
         needs = self.find_release_dependencies_on_team(buildid, teamid)
         out = []
@@ -174,6 +180,9 @@ class DependencyClient(Client):
         return out
 
 class Dependency:
+    '''
+    Data Structure for dependencies
+    '''
     def __init__(self, dep, target=None):
         self.id = dep['Id']
         self.__name__ = dep['Name']
@@ -186,12 +195,21 @@ class Dependency:
         self.__their_work__ = None
         
     def name(self):
+        '''
+        The dependency name (ie TD-xxx)
+        '''
         return self.__name__
     
     def set_my_work(self, work):
+        '''
+        Sets the work instance that needs the depencency
+        '''
         self.__my_work__ = work
         
     def my_work(self):
+        '''
+        Returns the work that needs the dependency
+        '''
         return self.__my_work__
     
     def set_their_work(self, work):
