@@ -56,7 +56,7 @@ class DependencyClient(Client):
         Returns a list of ids of dependencies that need to be satisfied for a specified work item
         '''
         try:
-            result = self.sf_session.query("Select Id from ADM_Team_Dependency__c where Providing_User_Story__c='%s'" % work_id)
+            result = self.sf_session.query("Select Id from ADM_Team_Dependency__c where Provider_User_Story__c='%s'" % work_id)
             out = result['records']
         except:
             out = []
@@ -116,7 +116,9 @@ class DependencyClient(Client):
             
             work_for_deps = self.find_dependencies_on_work(my_work['Id'])
             for d in work_for_deps:
-                dep.add_parent(self.get_dependency_data(d['Id'], ld))
+                if d['Id'] not in ld:
+                    ld.append(d['Id'])
+                    dep.add_parent(self.get_dependency_data(d['Id'], ld))
                 
         if dep.name() not in ld:
             ld.append(dep.name())
@@ -130,8 +132,6 @@ class DependencyClient(Client):
                 deps_on_their_work = self.find_work_dependencies(their_work['Id'])
                 for d in deps_on_their_work:
                     dep.add_child(self.get_dependency_data(d['Id'], loop_detector=ld))
-        else:
-            print "Loop detected on dependency: %s" % dep.name()
             
         return dep
     

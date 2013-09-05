@@ -4,7 +4,7 @@ Created on Aug 26, 2013
 @author: scrosby
 '''
 import unittest
-from ..DependencyClient import DependencyGrapher, Dependency, Work
+from ..DependencyClient import DependencyClient, Dependency, Work
 
 class Test(unittest.TestCase):
 
@@ -51,8 +51,9 @@ class Test(unittest.TestCase):
         return out
 
     def test_simple_graph(self):
-        grapher = DependencyGrapher()
-        grapher.graph_dependencies(self.deps, 'test')
+        gus = DependencyClient()
+        out = gus.get_team_dependency_tree('a00B0000000wJFX')
+        print out
 
 
 if __name__ == "__main__":

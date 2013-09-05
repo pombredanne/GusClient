@@ -26,3 +26,4 @@ v0.2.1,		30 Aug	2013 -- Made dependency graphs for read-able and made PDF object
 v0.2.2,		31 Aug	2013 -- Added sprint grouping, strict and ortho splines to graph
 v0.2.3,		 3 Sept	2013 -- Added backlog rank to work and changed status Never to dotted style
 v0.2.4,		 4 Sept	2013 -- Refactored DependencyGrapher to its own project
+v0.2.5,		 5 Sept	2013 -- Fixed upward recursion for dependency tree
